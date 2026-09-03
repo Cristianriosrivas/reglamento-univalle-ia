@@ -1,3 +1,4 @@
+https://reglamento-univalle-ia-d2u6pdect5emm4nbc9hkxe.streamlit.app/
 # reglamento-univalle-ia
 
 Agente de inteligencia artificial basado en RAG (Retrieval-Augmented Generation) que responde preguntas sobre el **Reglamento Estudiantil de Pregrado de la Universidad del Valle** (Acuerdo 009 de 1997), incluyendo sus modificaciones vigentes como el **Acuerdo 006 de 2023**, que actualizó el Capítulo VIII sobre bajos rendimientos académicos.
