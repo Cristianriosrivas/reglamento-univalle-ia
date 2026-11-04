@@ -1,0 +1,246 @@
+{
+  "_nota": "Contenido de ejemplo para la demo. Las respuestas se redactaron a partir del texto de cada norma y deben ser validadas por la dependencia responsable antes de usarse con estudiantes.",
+  "faq": [
+    {
+      "titulo": "¿Qué es el bajo rendimiento académico?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_006_2023",
+      "texto": "Según el Artículo 59 (modificado por el Acuerdo 006 de 2023), estás en bajo rendimiento si ocurre una o más de estas situaciones:\n- Pierdes el 50 % o más de los créditos matriculados.\n- Pierdes una asignatura que repites por primera vez, salvo que nunca hayas estado en bajo rendimiento y tu promedio acumulado sea de al menos 3.50.\n- Pierdes en un mismo período dos o más asignaturas que repites.\n- Pierdes una o más asignaturas que repites por segunda vez."
+    },
+    {
+      "titulo": "¿Qué pasa si incurro en bajo rendimiento académico por primera vez?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_006_2023",
+      "texto": "Puedes continuar en el mismo programa académico (Artículo 61). El primer bajo rendimiento es una alerta: la dirección del programa hará un acercamiento inicial contigo y la Universidad dispondrá de estrategias de acompañamiento."
+    },
+    {
+      "titulo": "¿Qué pasa si incurro en bajo rendimiento académico por segunda vez?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_006_2023",
+      "destacada": true,
+      "texto": "Se te podrá autorizar la matrícula si cumples **alguna** de estas condiciones (Artículo 62):\n- Haber asistido al acompañamiento cuando tuviste el primer bajo rendimiento.\n- Tener un promedio acumulado mínimo de 3.30.\n- Tener un avance de al menos el 60 % en las asignaturas propias del programa.\n\nLa matrícula se hace únicamente con la asesoría de la dirección del programa. Si te la autorizan y no te matriculas o cancelas el período siguiente, solo podrás pedir reingreso una vez en los siguientes cuatro períodos académicos."
+    },
+    {
+      "titulo": "¿Qué pasa si incurro en bajo rendimiento académico por tercera vez?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_006_2023",
+      "texto": "Se te podrá autorizar la matrícula solo si cumples **las tres** condiciones (Artículo 63):\n- Haber asistido al acompañamiento desde el segundo bajo rendimiento.\n- Tener un promedio acumulado mínimo de 3.50.\n- Tener un avance de al menos el 80 % en las asignaturas propias del programa.\n\nSi no las cumples, solo podrás volver al mismo programa por admisión regular a primer semestre, después de tres períodos académicos. Por causas de fuerza mayor puedes presentar tu caso al Comité de programa."
+    },
+    {
+      "titulo": "¿Cuál es el plazo para cancelar una asignatura?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "destacada": true,
+      "texto": "Puedes cancelar una asignatura hasta la **séptima semana** del período académico (Artículo 55). Para cancelar toda la matrícula, el plazo es la **décima semana**, y la solicitud debe ir acompañada de los paz y salvos."
+    },
+    {
+      "titulo": "¿Hasta cuándo puedo adicionar una asignatura?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Hasta la cuarta semana del período académico (Artículo 54). Para adicionar necesitas la autorización del Director de Programa Académico (Artículo 53)."
+    },
+    {
+      "titulo": "¿Cómo funciona la evaluación de habilitación?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "destacada": true,
+      "texto": "La habilitación es la evaluación que se hace al final de una asignatura a quienes no la aprobaron (Artículo 23). Para habilitar (Artículo 30):\n- La asignatura debe ser habilitable.\n- Debes haberla matriculado en el período académico inmediatamente anterior.\n- Tu calificación definitiva no puede ser inferior a 2.0.\n\nPierdes el derecho si no te presentas en la fecha fijada o no tomas el curso de vacaciones ofrecido para ello (Artículo 31)."
+    },
+    {
+      "titulo": "¿Con qué nota se aprueba una asignatura?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Según la escala del Artículo 43:\n- De 3.0 a 5.0: aprobación.\n- De 1.0 a 2.9: reprobación.\n- 0.0: para quien sin causa justificada no se presenta a una evaluación, es sorprendido en fraude o coopera con él, o no entrega los trabajos exigidos a tiempo."
+    },
+    {
+      "titulo": "¿Cómo reclamo por una calificación?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "1. Presenta tu reclamación por escrito al profesor, dentro de los 10 días hábiles siguientes a conocer el resultado (Artículo 65).\n2. Si no se resuelve, acude en su orden al Jefe de la Unidad Académica y al Consejo de la Facultad que ofrece la asignatura.\n3. Si pides la revisión al Jefe de la Unidad Académica, designará dos nuevos calificadores, que tienen 10 días hábiles. La calificación será el promedio de la que ellos asignen (Artículo 66)."
+    },
+    {
+      "titulo": "¿En cuánto tiempo deben entregarme las notas?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "El profesor debe darte a conocer los resultados y devolver las evaluaciones corregidas dentro de los 10 días hábiles siguientes a su realización. En las evaluaciones orales, la calificación se da a conocer al terminar (Artículo 46)."
+    },
+    {
+      "titulo": "¿Cómo solicito un reingreso?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "El reingreso es la autorización para matricularte después de haber dejado de hacerlo por uno o más períodos. Se solicita al Director del Programa Académico al que quieres reingresar, dentro de las fechas establecidas por la Universidad (Artículo 71)."
+    },
+    {
+      "titulo": "¿Qué sanción hay por hacer fraude en un examen?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "La calificación es 0.0 (Artículo 43). Además, reincidir en fraude es una falta grave, que puede llevar a la cancelación de la matrícula por uno o varios semestres (Artículo 111)."
+    },
+    {
+      "titulo": "¿Cuáles son los deberes del estudiante?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "El Artículo 8 incluye, entre otros, estos deberes:\n- Cumplir el Estatuto General, el Reglamento y las demás normas.\n- Tener un comportamiento respetuoso con toda la comunidad universitaria.\n- Abstenerse de ejercer actos de discriminación.\n- Cuidar los documentos, materiales y bienes que te confíen, y los de uso común.\n- No concurrir a la Universidad en estado de embriaguez o bajo el influjo de drogas.\n- Estar informado sobre el Reglamento Estudiantil y las normas de tu formación."
+    },
+    {
+      "titulo": "¿Cuál es el recargo por matrícula extemporánea?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Causa derechos adicionales del 25 % del valor de la matrícula financiera. Si tu matrícula tiene valor de $0, pagas el 20 % del salario mínimo mensual legal vigente (Artículo 52). Se tramita ante el Director del Programa Académico."
+    },
+    {
+      "titulo": "¿Cómo me inscribo a un programa de pregrado?",
+      "dependencia": "Admisiones",
+      "fuente": "resolucion_080_2024",
+      "destacada": true,
+      "texto": "La inscripción se hace **en línea**, en las fechas del Calendario Académico, siguiendo el procedimiento publicado en la página de Admisiones (Artículo 11 de la Resolución 080 de 2024).\n\nNecesitas título de bachiller o su equivalente, haber presentado el Examen de Estado y cumplir el puntaje global mínimo exigido (Artículos 4 y 10). Solo puedes inscribirte a un programa por período en una misma sede (Artículo 14). Hay dos convocatorias al año (Artículo 8)."
+    },
+    {
+      "titulo": "¿Me devuelven el dinero de la inscripción?",
+      "dependencia": "Admisiones",
+      "fuente": "resolucion_080_2024",
+      "texto": "No se reembolsa si no cumples los requisitos, no te inscribes en las fechas establecidas, lo haces de forma incompleta o con información inexacta, no presentas las Pruebas Específicas de Admisión, o no resultas admitido (Artículo 15 de la Resolución 080 de 2024)."
+    },
+    {
+      "titulo": "¿Cuáles son los derechos del estudiante?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "El Artículo 7 incluye, entre otros, estos derechos:\n- Recibir un trato respetuoso.\n- Elegir y ser elegido para los cuerpos colegiados.\n- Contar con el debido proceso en los asuntos disciplinarios.\n- Asociarte con fines culturales, científicos, profesionales o gremiales.\n- Gozar de los estímulos del Reglamento.\n- Disfrutar de los programas y servicios de bienestar universitario."
+    },
+    {
+      "titulo": "¿Qué sanciones disciplinarias existen?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Dependen de la falta (Artículo 108):\n- **Faltas leves:** amonestación verbal o escrita.\n- **Faltas graves:** cancelación de la matrícula por uno o varios períodos académicos.\n- **Faltas gravísimas:** expulsión de la Universidad.\n\nTienes derecho a conocer la investigación, a ser oído y a ser asistido en tu defensa (Artículo 113)."
+    },
+    {
+      "titulo": "¿Cómo solicito un traslado de programa?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "La solicitud se hace por escrito ante la División de Admisiones y Registro Académico, en las fechas establecidas (Artículo 77). El Comité de Programa Académico la analiza y decide las equivalencias (Artículo 79). Si es un traslado de sede, se entrega en la Secretaría Académica de la sede donde estás matriculado."
+    },
+    {
+      "titulo": "¿Cuántos créditos debo matricular como mínimo?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "El Profesor Consejero o el Director de Programa te orienta sobre cuántas asignaturas cursar. En casos debidamente justificados, el Director puede autorizar matricular como mínimo tres créditos (Artículo 50)."
+    },
+    {
+      "titulo": "¿Qué son los estímulos académicos?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Son reconocimientos al buen desempeño en lo académico, cultural y deportivo, y a los aportes al desarrollo institucional (Artículo 94). Se otorgan, entre otros, a quienes obtienen los cinco primeros puestos de su semestre al finalizar cada período (Artículo 95), y pueden incluir descuentos en el valor de la matrícula (Artículo 101)."
+    },
+    {
+      "titulo": "¿Cuánto tiempo tengo para terminar el trabajo de grado?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Hasta dos semestres, contados desde la primera matrícula de la asignatura Trabajo de Grado. Por causa justificada, el Comité del Programa puede prorrogar el plazo hasta por dos semestres más (Artículo 91)."
+    },
+    {
+      "titulo": "¿Cuáles son los requisitos para graduarme?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "El Director de Programa debe certificar ante Admisiones y Registro Académico que cumpliste todos los requisitos de tu programa (Artículo 105). En todos los programas se exige un Trabajo de Grado (Artículo 90). La Oficina de Grados define los demás procedimientos."
+    },
+    {
+      "titulo": "¿Cuánto cuesta la inscripción?",
+      "dependencia": "Admisiones",
+      "fuente": "resolucion_080_2024",
+      "texto": "El valor cambia en cada convocatoria y se publica en la página de Admisiones, junto con la oferta de programas, los cupos, los requisitos y las fechas (Artículo 8 de la Resolución 080 de 2024)."
+    },
+    {
+      "titulo": "¿Qué es una equivalencia u homologación de asignaturas?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Es el reconocimiento del trabajo académico certificado por la Universidad u otras instituciones de educación superior (Artículo 84). La decide el Comité de Programa Académico (Artículo 79)."
+    },
+    {
+      "titulo": "¿Qué diferencia hay entre matrícula financiera y académica?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "La matrícula financiera es el pago, y es requisito indispensable para poder hacer la matrícula académica (Artículo 51). Debes hacer las dos dentro de las fechas establecidas."
+    },
+    {
+      "titulo": "¿Cómo cancelo el semestre?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Puedes cancelar la matrícula hasta la **décima semana** del período, con los paz y salvos respectivos (Artículo 55).\n\nDespués de ese plazo, el Comité de Programa puede autorizar una cancelación extemporánea por calamidad doméstica, fuerza mayor, caso fortuito o enfermedad certificada por el Servicio Médico Universitario, siempre que no se haya hecho la evaluación final."
+    },
+    {
+      "titulo": "¿Puedo validar una asignatura?",
+      "dependencia": "Registro Académico",
+      "fuente": "acuerdo_009_1997",
+      "texto": "Sí. La validación es una prueba que se hace **por una sola vez** para demostrar que ya conoces una asignatura y no tener que cursarla (Artículo 23). Se requiere (Artículo 32):\n- Que la asignatura sea validable.\n- Estar matriculado en el período en que la solicitas.\n- No estar matriculado en ella ni haberla reprobado.\n- Cumplir los requisitos para cursarla.\n- Pagar los derechos: 4 % del valor del recibo de matrícula financiera por cada asignatura.\n\nSe solicita al Director de Programa Académico, dentro del plazo establecido (Artículo 33)."
+    }
+  ],
+  "contacto": [
+    {
+      "titulo": "Área de Registro Académico",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/",
+      "texto": "Correo: registro@correounivalle.edu.co. Teléfono: +57 602 3212107. Atiende matrícula académica, reingresos, certificados, grados y registro de calificaciones."
+    },
+    {
+      "titulo": "Matrícula académica",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/estudiantes/matricula-pregrado/",
+      "texto": "Correo: matricula.academica@correounivalle.edu.co. Para dudas sobre el proceso de matrícula académica."
+    },
+    {
+      "titulo": "Certificados académicos",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/certificados/",
+      "texto": "Correo: certificados@correounivalle.edu.co. Para solicitar certificados de calificaciones y otros certificados académicos."
+    },
+    {
+      "titulo": "Oficina de Grados",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/estudiantes/pregrado-grados/",
+      "texto": "Correo: grados@correounivalle.edu.co. Para requisitos, fechas y trámites de grado."
+    },
+    {
+      "titulo": "Soporte de equivalencias",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/",
+      "texto": "Correo: soporte.equivalencias@correounivalle.edu.co. Para dudas sobre equivalencias y homologaciones."
+    },
+    {
+      "titulo": "Área de Admisiones",
+      "dependencia": "Admisiones",
+      "url": "https://admisiones.univalle.edu.co/",
+      "texto": "Correo: admisiones@correounivalle.edu.co. Para inscripciones y admisión a programas de pregrado."
+    },
+    {
+      "titulo": "Quejas y reclamos",
+      "dependencia": "Secretaría General",
+      "url": "https://www.univalle.edu.co/",
+      "texto": "Correo: quejasyreclamos@correounivalle.edu.co. Línea general: (602) 3212100. Línea gratuita: 018000 22 00 21."
+    }
+  ],
+  "fecha": [
+    {
+      "titulo": "Cancelación ordinaria de semestre (pregrado)",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/m_canc_sem_preg/",
+      "fin": "2026-10-30",
+      "texto": "Hasta las 5:00 p. m. del 30 de octubre, para Cali y el Sistema de Regionalización."
+    },
+    {
+      "titulo": "Solicitudes de reingreso de posgrado",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/estudiantes/reingreso-posgrado/",
+      "inicio": "2026-11-05",
+      "fin": "2026-11-19",
+      "texto": "Registro de solicitudes de reingreso a posgrado, para Cali y el Sistema de Regionalización."
+    },
+    {
+      "titulo": "Ceremonia solemne de grado (pregrado)",
+      "dependencia": "Registro Académico",
+      "url": "https://registro.univalle.edu.co/estudiantes/pregrado-grados/",
+      "inicio": "2026-12-12",
+      "fin": "2026-12-12",
+      "texto": "Ceremonia solemne de grado de pregrado, para Cali y el Sistema de Regionalización."
+    }
+  ]
+}
