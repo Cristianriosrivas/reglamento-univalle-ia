@@ -4,60 +4,123 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
   <title>Demostración del asistente</title>
+  <link rel="icon" href="data:,">
   <style>
-    :root { --primario: #7a0c2e; --texto: #1f2328; --suave: #5b6470; --borde: #e1e3e7; --fondo: #f6f6f7; }
+    :root {
+      --primario: #7a0c2e; --texto: #1f2328; --suave: #5b6470; --borde: #e1e3e7; --fondo: #f6f6f7; --tarjeta: #fff;
+      --aviso: #fdf3dc; --aviso-texto: #5f4000; --codigo: #23272c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primario: #e26a8a; --texto: #f0efec; --suave: #c3c2b7; --borde: #34312f; --fondo: #0f0f0e; --tarjeta: #1a1a19;
+        --aviso: #352910; --aviso-texto: #f3d38f; --codigo: #000;
+      }
+    }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-    .aviso { padding: 9px 16px; background: #fdf3dc; color: #5f4000; font-size: 14px; text-align: center; }
-    main { max-width: 780px; margin: 0 auto; padding: 44px 20px 120px; }
-    h1 { margin: 0 0 10px; font-size: clamp(27px, 5vw, 36px); line-height: 1.15; }
-    h2 { margin: 36px 0 10px; font-size: 20px; }
+    .aviso { padding: 9px 16px; background: var(--aviso); color: var(--aviso-texto); font-size: 14px; text-align: center; }
+    main { max-width: 860px; margin: 0 auto; padding: 44px 20px 140px; }
+    h1 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 38px); line-height: 1.15; }
+    h2 { margin: 40px 0 12px; font-size: 21px; }
+    h3 { margin: 0 0 4px; font-size: 16px; }
     p { margin: 0 0 12px; }
-    .intro { color: var(--suave); font-size: 18px; }
-    ol { margin: 0; padding-left: 22px; }
-    li { margin-bottom: 10px; }
+    .intro { color: var(--suave); font-size: 18px; max-width: 700px; }
+    ol, ul { margin: 0; padding-left: 22px; }
+    li { margin-bottom: 9px; }
     a { color: var(--primario); font-weight: 600; }
     code, pre { font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
-    pre { margin: 0 0 10px; padding: 13px 15px; border-radius: 9px; background: #23272c; color: #f1f3f5; overflow-x: auto; }
+    pre { margin: 0 0 10px; padding: 13px 15px; border-radius: 9px; background: var(--codigo); color: #f1f3f5; overflow-x: auto; }
     q { font-style: italic; }
-    .botones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-    .boton { display: inline-block; padding: 10px 16px; border: 1px solid var(--borde); border-radius: 9px; background: #fff; color: var(--texto); text-decoration: none; }
-    .boton.primario { background: var(--primario); border-color: var(--primario); color: #fff; }
+    .botones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .boton { display: inline-block; padding: 10px 16px; border: 1px solid var(--borde); border-radius: 9px; background: var(--tarjeta); color: var(--texto); text-decoration: none; }
+    .boton.primario { background: #7a0c2e; border-color: #7a0c2e; color: #fff; }
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .tarjeta { padding: 16px 18px; border: 1px solid var(--borde); border-radius: 12px; background: var(--tarjeta); }
+    .tarjeta p { margin: 0; color: var(--suave); font-size: 15px; }
+    .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .dos .tarjeta ol { margin-top: 6px; font-size: 15px; }
+    .pasos > li { margin-bottom: 12px; }
+    .pasos > li strong:first-child { display: block; }
+    .chico { color: var(--suave); font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14.5px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
+    th, td { padding: 8px 12px; border-bottom: 1px solid var(--borde); text-align: left; vertical-align: top; }
+    th { color: var(--suave); font-weight: 600; }
+    tr:last-child td { border-bottom: 0; }
+    @media (max-width: 640px) { .dos { grid-template-columns: 1fr; } table { font-size: 13.5px; } }
   </style>
 </head>
 <body>
   <div class="aviso">Página de prueba del prototipo. No es un sitio oficial de la Universidad del Valle.</div>
   <main>
-    <h1>Asistente estudiantil</h1>
-    <p class="intro">Un chat que responde dudas sobre el reglamento, matrículas e inscripciones, citando la norma de donde sale cada respuesta. Los funcionarios actualizan el contenido sin programar.</p>
+    <h1>Asistente virtual de la Universidad del Valle</h1>
+    <p class="intro">Responde dudas de aspirantes y estudiantes sobre admisiones, matrícula, reglamento, trámites, grados y novedades. Cada respuesta cita su fuente oficial, y los funcionarios la actualizan sin programar.</p>
     <div class="botones">
       <a class="boton primario" href="/panel">Abrir el panel de funcionarios</a>
+      <a class="boton" href="#guion">Ver el guion de la demostración</a>
+    </div>
+
+    <h2>Qué lo hace distinto</h2>
+    <div class="rejilla">
+      <div class="tarjeta"><h3>Dos públicos, una conversación</h3><p>Pregunta si la persona quiere estudiar en Univalle o ya es estudiante, y ajusta las sugerencias y las respuestas a cada caso.</p></div>
+      <div class="tarjeta"><h3>Se mantiene al día solo</h3><p>Lee las páginas oficiales de Registro Académico y las noticias de la Universidad cada pocas horas. Si una página cambia, la respuesta cambia con ella.</p></div>
+      <div class="tarjeta"><h3>Los funcionarios mandan</h3><p>Editores y aprobadores por dependencia, con revisión antes de publicar, historial de versiones y avisos destacados en el chat.</p></div>
+      <div class="tarjeta"><h3>No inventa</h3><p>Primero usa respuestas aprobadas y el texto literal de las normas. La IA solo redacta a partir de esas fuentes y, si no hay fuente, lo dice.</p></div>
+      <div class="tarjeta"><h3>Costo cero</h3><p>Funciona con los planes gratuitos de Gemini, Groq o Cohere, o con un modelo propio. Si se acaba la cuota, sigue respondiendo sin IA.</p></div>
+      <div class="tarjeta"><h3>Cuida los datos</h3><p>Borra correos, cédulas, celulares y nombres antes de buscar o consultar la IA. No guarda conversaciones, solo preguntas anónimas sin respuesta.</p></div>
     </div>
 
     <h2>Pruébalo</h2>
-    <p>Abre el botón <strong>¿Tienes dudas?</strong>, abajo a la derecha, y pregunta por ejemplo:</p>
-    <ol>
-      <li><q>¿Qué pasa si incurro en bajo rendimiento académico por segunda vez?</q></li>
-      <li><q>quiero cambiarme de carrera</q></li>
-      <li><q>¿Cuándo es la ceremonia de grado?</q></li>
-      <li><q>cuánto debo de matrícula</q> (no tiene acceso a datos personales, y lo dice)</li>
-      <li><q>cuál es la capital de Francia</q> (no responde fuera de su tema)</li>
+    <p>Abre el botón <strong>¿Tienes dudas?</strong>, abajo a la derecha. Elige un perfil y pregunta, por ejemplo:</p>
+    <div class="dos">
+      <div class="tarjeta">
+        <h3>Como aspirante</h3>
+        <ol>
+          <li><q>¿Cuánto cuesta la inscripción?</q></li>
+          <li><q>¿Dónde veo la lista de admitidos?</q></li>
+          <li><q>¿Puedo transferirme desde otra universidad?</q></li>
+        </ol>
+      </div>
+      <div class="tarjeta">
+        <h3>Como estudiante</h3>
+        <ol>
+          <li><q>¿Qué pasa si incurro en bajo rendimiento por segunda vez?</q></li>
+          <li><q>¿Cómo saco el carné estudiantil?</q></li>
+          <li><q>¿Qué novedades hay?</q></li>
+        </ol>
+      </div>
+    </div>
+    <p class="chico">También sabe cuándo no responder: <q>cuánto debo de matrícula</q> (no tiene acceso a datos personales y remite a la oficina) o <q>cuál es la capital de Francia</q> (está fuera de su tema).</p>
+
+    <h2 id="guion">Guion de la demostración (5 minutos)</h2>
+    <ol class="pasos">
+      <li><strong>El chat en acción.</strong> Abre el chat, elige «Ya soy estudiante» y pregunta <q>¿Cuándo es la ceremonia de grado?</q>. Fíjate en la fecha y en la fuente citada.</li>
+      <li><strong>Un funcionario cambia la respuesta.</strong> Entra al panel como editor de Registro, busca «Ceremonia» en <em>Contenido</em>, cambia la fecha y guarda. El chat público sigue igual: nada sale sin aprobación.</li>
+      <li><strong>Prueba antes de publicar.</strong> En <em>Probar el asistente</em> haz la misma pregunta: ya ves la fecha nueva. Envía el cambio a revisión.</li>
+      <li><strong>Aprobación.</strong> Entra como aprobador de Registro y pulsa <em>Publicar</em> en <em>Revisión</em>. Vuelve al chat: la fecha cambió, sin tocar código.</li>
+      <li><strong>Un aviso para todos.</strong> Como administrador, crea una <em>Novedad</em>, marca «Mostrar como aviso destacado» y publícala. Al abrir el chat aparece el aviso arriba, y responde a <q>¿qué novedades hay?</q>.</li>
+      <li><strong>Las páginas oficiales.</strong> En <em>Páginas oficiales</em> pulsa <em>Leer ahora</em> en cualquiera: el asistente vuelve a leerla y registra en <em>Actividad</em> lo que cambió.</li>
+      <li><strong>Lo que la gente necesita.</strong> En <em>Inicio</em> están las preguntas por día, cuántas se resolvieron sin IA y cuántas sirvieron. En <em>Por mejorar</em>, lo que no encontró respuesta, con un botón para crearla.</li>
     </ol>
 
-    <h2>Cómo se actualiza una respuesta</h2>
-    <ol>
-      <li>En el chat, pregunta <q>¿Cuándo es la ceremonia de grado?</q> y fíjate en la fecha.</li>
-      <li>Entra al panel como editor de Registro y cambia esa fecha en <strong>Contenido</strong>. El chat público sigue igual.</li>
-      <li>Compruébalo en <strong>Probar el asistente</strong> y envíalo a revisión.</li>
-      <li>Entra como aprobador de Registro y pulsa <strong>Publicar</strong> en <strong>Revisión</strong>.</li>
-      <li>Vuelve a preguntar en el chat: la fecha ya cambió, sin tocar código.</li>
-    </ol>
+    <h2>Cuentas de la demostración</h2>
+    <p class="chico">Solo existen en modo de desarrollo; en producción el servidor no las crea. La contraseña es el valor de <code>DEMO_CLAVE</code> en el archivo <code>.env</code> del servidor.</p>
+    <table>
+      <thead><tr><th>Correo</th><th>Rol</th><th>Puede</th></tr></thead>
+      <tbody>
+        <tr><td>admin@demo.local</td><td>Administrador</td><td>Todo: usuarios, ajustes, cualquier dependencia</td></tr>
+        <tr><td>editor.registro@demo.local</td><td>Editor de Registro</td><td>Proponer cambios de Registro Académico</td></tr>
+        <tr><td>aprobador.registro@demo.local</td><td>Aprobador de Registro</td><td>Publicar lo de Registro Académico</td></tr>
+        <tr><td>editor.admisiones@demo.local</td><td>Editor de Admisiones</td><td>Proponer cambios para aspirantes</td></tr>
+        <tr><td>aprobador.secretaria@demo.local</td><td>Aprobador de Secretaría General</td><td>Publicar normas y acuerdos</td></tr>
+      </tbody>
+    </table>
 
     <h2>Cómo se instala en una página</h2>
     <p>Basta con esta línea en la plantilla del sitio:</p>
-    <pre><code id="instalacion">&lt;script src="https://SERVIDOR/widget.js" defer&gt;&lt;/script&gt;</code></pre>
-    <p>Funciona en sitios Joomla y WordPress. Los estilos del chat quedan aislados de los de la página.</p>
+    <pre><code>&lt;script src="https://SERVIDOR/widget.js" defer&gt;&lt;/script&gt;</code></pre>
+    <p>Funciona en sitios Joomla y WordPress, y sus estilos quedan aislados de los de la página. En el portal de Admisiones se puede fijar el perfil con <code>data-perfil="aspirante"</code>.</p>
   </main>
   <script src="/widget.js" defer></script>
 </body>

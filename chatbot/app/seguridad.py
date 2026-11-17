@@ -7,6 +7,7 @@ import hmac
 import re
 import secrets
 import sqlite3
+import string
 import threading
 import time
 from collections import defaultdict, deque
@@ -15,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from .db import ahora
 
 DURACION_SESION = timedelta(hours=8)
+LARGO_MINIMO_CLAVE = 10
 _N, _R, _P = 2**14, 8, 1
 
 
@@ -31,6 +33,26 @@ def verificar_clave(clave: str, guardado: str) -> bool:
         return hmac.compare_digest(calculada, base64.b64decode(derivada))
     except ValueError:
         return False
+
+
+def problema_de_clave(clave: str, correo: str = "") -> str | None:
+    """Devuelve qué le falta a una contraseña, o None si sirve."""
+    if len(clave) < LARGO_MINIMO_CLAVE:
+        return f"La contraseña debe tener al menos {LARGO_MINIMO_CLAVE} caracteres."
+    if correo and clave.lower() in correo.lower():
+        return "La contraseña no puede ser parte del correo."
+    if not (re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]", clave) and re.search(r"\d", clave)):
+        return "La contraseña debe combinar letras y números."
+    return None
+
+
+def clave_temporal() -> str:
+    """Contraseña de un solo uso para un usuario nuevo o restablecido: la persona la cambia al entrar."""
+    alfabeto = string.ascii_letters + string.digits
+    while True:
+        clave = "".join(secrets.choice(alfabeto) for _ in range(14))
+        if problema_de_clave(clave) is None:
+            return clave
 
 
 def _hash_token(token: str) -> str:
@@ -50,8 +72,9 @@ def usuario_de_sesion(conexion: sqlite3.Connection, token: str | None) -> dict |
     if not token:
         return None
     fila = conexion.execute(
-        """SELECT u.id, u.correo, u.nombre, u.rol, u.dependencia FROM sesiones s
-           JOIN usuarios u ON u.id = s.usuario_id WHERE s.token_hash = ? AND s.expira > ?""",
+        """SELECT u.id, u.correo, u.nombre, u.rol, u.dependencia, u.debe_cambiar_clave FROM sesiones s
+           JOIN usuarios u ON u.id = s.usuario_id
+           WHERE s.token_hash = ? AND s.expira > ? AND u.activo = 1""",
         (_hash_token(token), ahora()),
     ).fetchone()
     return dict(fila) if fila else None
@@ -63,6 +86,11 @@ def cerrar_sesion(conexion: sqlite3.Connection, token: str | None) -> None:
         conexion.commit()
 
 
+def cerrar_sesiones_de(conexion: sqlite3.Connection, usuario_id: int) -> None:
+    conexion.execute("DELETE FROM sesiones WHERE usuario_id = ?", (usuario_id,))
+    conexion.commit()
+
+
 class Limitador:
     """Ventanas deslizantes en memoria. Con varios servidores habría que moverlo a un almacén compartido."""
 
@@ -70,11 +98,13 @@ class Limitador:
         self.reglas = reglas  # (máximo de usos, segundos de la ventana)
         self._usos: dict[str, deque[float]] = defaultdict(deque)
         self._candado = threading.Lock()
+        self._ultima_limpieza = time.monotonic()
 
     def permitir(self, clave: str) -> bool:
         momento = time.monotonic()
         ventana_mayor = max(segundos for _, segundos in self.reglas)
         with self._candado:
+            self._limpiar(momento, ventana_mayor)
             usos = self._usos[clave]
             while usos and momento - usos[0] > ventana_mayor:
                 usos.popleft()
@@ -84,18 +114,45 @@ class Limitador:
             usos.append(momento)
             return True
 
+    def _limpiar(self, momento: float, ventana: int) -> None:
+        """Olvida a quien no ha preguntado en toda la ventana, para que la memoria no crezca sin fin."""
+        if momento - self._ultima_limpieza < 600:
+            return
+        self._ultima_limpieza = momento
+        for clave in [c for c, usos in self._usos.items() if not usos or momento - usos[-1] > ventana]:
+            del self._usos[clave]
+
     def reiniciar(self, clave: str) -> None:
         with self._candado:
             self._usos.pop(clave, None)
 
 
 _CORREO = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_NUMERO_LARGO = re.compile(r"\b\d[\d .\-]{5,}\d\b")
-_NOMBRE = re.compile(r"\b((?i:me llamo|mi nombre es|soy))\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*")
+# Documentos y códigos: 1.144.555.777, 1 144 555 777, 1144555777, 202012345. No toca fechas ni listas cortas,
+# ni valores en dinero («$1.300.000», «1.300.000 pesos»), que sí importan para responder.
+_DOCUMENTO = re.compile(
+    r"(?<![\d$-])(?<!\$ )(?:\d{1,3}(?:[. ]\d{3}){2,3}|\d{6,12})(?![\d-])(?!\s*(?:pesos|cop|millones)\b)", re.IGNORECASE
+)
+_CELULAR = re.compile(r"(?<!\d)(?:\+?57[ -]?)?3\d{2}[ -]\d{3}[ -]?\d{4}(?!\d)")
+_NOMBRE = re.compile(r"\b((?i:me llamo|mi nombre es|soy))\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)")
+# «Soy Estudiante de Medicina» describe un rol, no un nombre.
+_ROLES = {
+    "estudiante", "aspirante", "egresado", "egresada", "graduado", "graduada", "profesor", "profesora", "docente",
+    "bachiller", "admitido", "admitida", "padre", "madre", "acudiente", "funcionario", "funcionaria", "monitor",
+    "monitora", "representante", "nuevo", "nueva", "de", "del", "la", "el", "un", "una",
+}
+
+
+def _nombre(coincidencia: re.Match) -> str:
+    inicio, palabras = coincidencia.group(1), coincidencia.group(2)
+    if inicio.lower() == "soy" and palabras.split()[0].lower() in _ROLES:
+        return coincidencia.group(0)
+    return f"{inicio} [nombre]"
 
 
 def anonimizar(texto: str) -> str:
-    """Quita correos, números de documento o código y nombres antes de guardar una pregunta."""
+    """Quita correos, celulares, números de documento o código y nombres antes de guardar o enviar una pregunta."""
     texto = _CORREO.sub("[correo]", texto)
-    texto = _NUMERO_LARGO.sub("[número]", texto)
-    return _NOMBRE.sub(lambda m: f"{m.group(1)} [nombre]", texto)
+    texto = _CELULAR.sub("[número]", texto)
+    texto = _DOCUMENTO.sub("[número]", texto)
+    return _NOMBRE.sub(_nombre, texto)

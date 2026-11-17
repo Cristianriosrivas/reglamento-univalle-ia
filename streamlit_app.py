@@ -1,210 +1,162 @@
 """
-Agente Reglamento Univalle - Asistente basado en RAG (Retrieval-Augmented Generation)
-que responde preguntas sobre el Reglamento Estudiantil de Pregrado de la
-Universidad del Valle. Versión con Streamlit, pensada para desplegarse en
-Streamlit Community Cloud.
-"""
+Asistente virtual de la Universidad del Valle — versión para Streamlit Community Cloud.
 
+Usa el mismo motor que el chat flotante de `chatbot/`: respuestas aprobadas por las dependencias, texto literal de
+las normas, páginas oficiales de Registro Académico y noticias de la Universidad. La IA (Gemini, Groq o Cohere, con
+su plan gratuito) solo redacta a partir de esas fuentes; sin clave, el asistente igual responde.
+
+El panel de funcionarios necesita el servidor completo: ver `chatbot/README.md`.
+"""
+from __future__ import annotations
+
+import html
 import os
-from dotenv import load_dotenv
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_cohere import CohereEmbeddings, ChatCohere
-from langchain_community.vectorstores import FAISS
-from langchain_classic.chains import create_retrieval_chain
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
+RAIZ = Path(__file__).resolve().parent
+sys.path.insert(0, str(RAIZ / "chatbot"))
 
-# ---------------------------------------------------------------------------
-# 1. Configuración de la página
-# ---------------------------------------------------------------------------
-st.set_page_config(
-    page_title="Reglamento Univalle | Asistente Virtual",
-    page_icon="📘",
-    layout="wide",
-)
-
-PDF_PATH = os.environ.get("PDF_PATH", "reglamento_universitario.pdf")
+st.set_page_config(page_title="Asistente Univalle", page_icon="🎓", layout="centered")
 
 
-def obtener_api_key():
-    """
-    Busca la API key de Cohere en este orden:
-    1. Variables de entorno (útil en local, vía .env)
-    2. st.secrets (así es como Streamlit Community Cloud guarda los secretos:
-       se configura UNA sola vez en el panel del sitio, y desde ahí el agente
-       la lee automáticamente en cada inicio, sin volver a escribirla nunca).
-    """
-    load_dotenv()
-    key = os.environ.get("COHERE_API_KEY")
-    if key:
-        return key
+def _secretos_al_entorno() -> None:
+    """En Streamlit Community Cloud las claves se guardan en Settings → Secrets; el motor las lee del entorno."""
     try:
-        return st.secrets["COHERE_API_KEY"]
-    except Exception:
-        return None
+        for clave, valor in st.secrets.items():
+            if isinstance(valor, (str, int, float, bool)):
+                os.environ.setdefault(clave, str(valor))
+    except Exception:  # noqa: BLE001 - sin secrets.toml se usan las variables del sistema o chatbot/.env
+        pass
 
 
-COHERE_API_KEY = obtener_api_key()
+_secretos_al_entorno()
 
-if not COHERE_API_KEY:
-    st.error(
-        "⚠️ Falta configurar la API key de Cohere.\n\n"
-        "- En local: crea un archivo `.env` (basado en `.env.example`) con tu key.\n"
-        "- En Streamlit Community Cloud: ve a la configuración de tu app → "
-        "**Settings → Secrets**, y agrega:\n\n"
-        "```\nCOHERE_API_KEY = \"tu_key_aqui\"\n```"
-    )
-    st.stop()
+from app import ajustes, semilla  # noqa: E402
+from app import contenidos as C  # noqa: E402
+from app import fuentes_web as W  # noqa: E402
+from app.asistente import Asistente, registrar_valoracion  # noqa: E402
+from app.config import cargar_config  # noqa: E402
+from app.db import conectar, hoy, inicializar  # noqa: E402
 
-os.environ["COHERE_API_KEY"] = COHERE_API_KEY
+PERFILES = {"estudiante": "Ya soy estudiante", "aspirante": "Quiero estudiar en Univalle"}
+VALORABLES = {"aprobada", "ia", "norma", "calendario", "novedades"}
 
 
-# ---------------------------------------------------------------------------
-# 2. Cargamos el agente (con cache para no rehacer todo en cada interacción)
-# ---------------------------------------------------------------------------
-@st.cache_resource(show_spinner="Preparando el agente del Reglamento Univalle...")
-def cargar_agente():
-    if not os.path.exists(PDF_PATH):
-        st.error(f"No se encontró el archivo '{PDF_PATH}'.")
-        st.stop()
-
-    loader = PyPDFLoader(PDF_PATH)
-    paginas = loader.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    fragmentos = text_splitter.split_documents(paginas)
-
-    embeddings = CohereEmbeddings(model="embed-multilingual-v3.0")
-    vectorstore = FAISS.from_documents(fragmentos, embeddings)
-    retriever = vectorstore.as_retriever()
-
-    llm = ChatCohere(model="command-a-03-2025")
-
-    instrucciones = (
-        "Eres un asistente virtual experto en el Reglamento Estudiantil de Pregrado "
-        "de la Universidad del Valle (Univalle). Usa EXCLUSIVAMENTE los siguientes "
-        "fragmentos del reglamento para responder. Cuando cites un artículo, "
-        "menciona su número (por ejemplo 'Artículo 61'). Si una norma fue "
-        "modificada por un acuerdo posterior (como el Acuerdo 006 de 2023 sobre "
-        "bajos rendimientos académicos), prioriza siempre la versión más reciente. "
-        "Si la respuesta no está en el texto, di amablemente que no tienes esa "
-        "información y sugiere consultar directamente con la Dirección de Programa "
-        "Académico o la División de Admisiones y Registro Académico. "
-        "Responde de forma clara, profesional y en español.\n\n"
-        "{context}"
-    )
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", instrucciones),
-        ("human", "{input}"),
-    ])
-
-    question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    return create_retrieval_chain(retriever, question_answer_chain)
+@st.cache_resource(show_spinner="Preparando el asistente…")
+def motor():
+    """Se crea una vez por servidor: base de datos, índice de búsqueda y lectura periódica de páginas oficiales."""
+    config = cargar_config()
+    inicializar(config.ruta_db)
+    conexion = conectar(config.ruta_db)
+    semilla.cargar_si_vacia(conexion, "")  # sin cuentas de prueba: aquí no hay panel
+    asistente = Asistente(config)
+    asistente.indice_publico(conexion)
+    conexion.close()
+    if config.fuentes_web:
+        W.Programador(config, asistente.invalidar).iniciar()
+    return config, asistente
 
 
-agente_reglamento = cargar_agente()
+config, asistente = motor()
+conexion = conectar(config.ruta_db)
+valores = ajustes.todos(conexion)
 
-
-# ---------------------------------------------------------------------------
-# 3. Estilos - apariencia institucional Univalle (rojo vino + dorado)
-# ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
-    :root {
-        --uv-primary: #7a0c2e;
-        --uv-primary-dark: #4a0719;
-        --uv-gold: #d4a017;
-    }
-    #uv-header {
-        background: linear-gradient(120deg, var(--uv-primary-dark), var(--uv-primary));
-        border-radius: 14px;
-        padding: 28px 32px;
-        margin-bottom: 18px;
-        color: white;
-        text-align: center;
-    }
-    #uv-header h1 {
-        margin: 0 0 6px 0;
-        color: white;
-    }
-    #uv-header h1 span {
-        color: var(--uv-gold);
-    }
-    #uv-header p {
-        margin: 0;
-        opacity: 0.9;
-    }
+    .uv-cabecera { padding: 22px 26px; border-radius: 14px; margin-bottom: 14px; color: #fff;
+                   background: linear-gradient(120deg, #4a0719, #7a0c2e); }
+    .uv-cabecera h1 { margin: 0 0 4px; padding: 0; color: #fff; font-size: 1.9rem; }
+    .uv-cabecera p { margin: 0; opacity: .9; }
+    .uv-aviso { padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; background: #fdf3dc; color: #5f4000; }
+    .uv-aviso a { color: #5f4000; font-weight: 600; }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 st.markdown(
-    """
-    <div id="uv-header">
-        <h1>📘 Reglamento <span>Univalle</span></h1>
-        <p>Asistente virtual sobre el Reglamento Estudiantil de Pregrado, disponible 24/7</p>
-    </div>
-    """,
+    f"""<div class="uv-cabecera"><h1>{html.escape(valores["nombre"])}</h1>
+    <p>Admisiones, matrícula, reglamento, trámites, grados y novedades de la Universidad del Valle.</p></div>""",
     unsafe_allow_html=True,
 )
 
-EJEMPLOS = [
-    "¿Cuáles son los deberes del estudiante?",
-    "¿Qué pasa si incurro en bajo rendimiento académico por segunda vez?",
-    "¿Cuál es el plazo para cancelar una asignatura?",
-    "¿Cómo funciona la evaluación de habilitación?",
-]
+aviso = C.aviso_destacado(conexion, hoy())
+if aviso:
+    url = aviso["url"] or ""
+    enlace = f' <a href="{html.escape(url)}" target="_blank">Ver más</a>' if url.startswith("https://") else ""
+    st.markdown(f'<div class="uv-aviso"><strong>Aviso:</strong> {html.escape(aviso["titulo"])}.{enlace}</div>', unsafe_allow_html=True)
 
-# ---------------------------------------------------------------------------
-# 4. Panel lateral: categorías de ayuda y preguntas rápidas
-# ---------------------------------------------------------------------------
-pregunta_desde_boton = None
-with st.sidebar:
-    st.markdown("### 📖 Puedo ayudarte con")
-    st.markdown(
-        "- 🎓 Derechos y deberes del estudiante\n"
-        "- 📝 Evaluaciones y calificaciones\n"
-        "- 📉 Bajos rendimientos académicos\n"
-        "- 🔁 Matrícula, adiciones y cancelaciones\n"
-        "- 🔄 Reingresos, traslados y transferencias\n"
-        "- ⚖️ Régimen disciplinario"
-    )
-    st.markdown("### 💬 Preguntas rápidas")
-    for ejemplo in EJEMPLOS:
-        if st.button(ejemplo, use_container_width=True):
-            pregunta_desde_boton = ejemplo
-
-# ---------------------------------------------------------------------------
-# 5. Chat
-# ---------------------------------------------------------------------------
 if "mensajes" not in st.session_state:
     st.session_state.mensajes = []
+if "perfil" not in st.session_state:
+    st.session_state.perfil = "estudiante"
 
-for mensaje in st.session_state.mensajes:
-    with st.chat_message(mensaje["role"]):
-        st.markdown(mensaje["content"])
+perfil = st.radio(
+    "¿Quién pregunta?", list(PERFILES), format_func=PERFILES.get, horizontal=True, key="perfil", label_visibility="collapsed"
+)
 
-pregunta_escrita = st.chat_input("Escribe tu pregunta aquí...")
-pregunta_final = pregunta_desde_boton or pregunta_escrita
+pregunta_sugerida = None
+with st.sidebar:
+    st.markdown("### Preguntas frecuentes")
+    for sugerencia in valores[f"sugerencias_{perfil}"]:
+        if st.button(sugerencia, use_container_width=True):
+            pregunta_sugerida = sugerencia
+    st.divider()
+    st.markdown("### Cómo responde")
+    st.markdown(
+        "1. Busca primero en las **respuestas aprobadas** por las dependencias y en las **páginas oficiales**.\n"
+        "2. Si no hay una respuesta directa, cita el **texto de la norma**.\n"
+        "3. La IA solo redacta a partir de esas fuentes, y cada respuesta dice de dónde sale."
+    )
+    estado = asistente.ia.describir()
+    nombres = ", ".join(p["nombre"].capitalize() for p in estado["proveedores"]) or "sin IA (respuestas oficiales)"
+    paginas = conexion.execute("SELECT COUNT(*) FROM fuentes_web WHERE activa = 1 AND ultima_revision != '' AND error = ''").fetchone()[0]
+    st.caption(f"Redacción: {nombres}. Páginas oficiales leídas: {paginas}.")
+    st.caption("Orientación general: confirma siempre con la fuente oficial. No escribas datos personales.")
+    if st.button("Nueva conversación", use_container_width=True):
+        st.session_state.mensajes = []
+        st.rerun()
 
-if pregunta_final:
-    st.session_state.mensajes.append({"role": "user", "content": pregunta_final})
-    with st.chat_message("user"):
-        st.markdown(pregunta_final)
 
+def mostrar(indice: int, mensaje: dict) -> None:
+    with st.chat_message("user" if mensaje["rol"] == "usuario" else "assistant"):
+        st.markdown(mensaje["texto"])
+        fuentes = mensaje.get("fuentes") or []
+        if fuentes:
+            enlaces = [f"[{f['titulo']}]({f['url']})" if (f.get("url") or "").startswith("https://") else f["titulo"] for f in fuentes]
+            st.caption("Fuente: " + " · ".join(enlaces))
+        if mensaje.get("tipo") == "ia":
+            st.caption("Redactado con IA a partir de las fuentes. Verifícalo en el enlace.")
+        if mensaje.get("tipo") in VALORABLES and "util" not in mensaje:
+            columnas = st.columns([1, 1, 6])
+            for columna, (etiqueta, util) in zip(columnas, (("👍 Sí", True), ("👎 No", False))):
+                if columna.button(etiqueta, key=f"valorar-{indice}-{util}", help="¿Te sirvió esta respuesta?"):
+                    registrar_valoracion(conexion, mensaje["pregunta"], mensaje["tipo"], [f["titulo"] for f in fuentes], util)
+                    mensaje["util"] = util
+                    st.rerun()
+        elif "util" in mensaje:
+            st.caption("¡Gracias por tu opinión!")
+
+
+if not st.session_state.mensajes:
     with st.chat_message("assistant"):
-        with st.spinner("Consultando el Reglamento Estudiantil de Univalle..."):
-            try:
-                resultado = agente_reglamento.invoke({"input": pregunta_final})
-                respuesta = resultado["answer"]
-            except Exception as e:
-                respuesta = f"Ocurrió un error al procesar tu pregunta: {e}"
-        st.markdown(respuesta)
+        st.markdown(valores["bienvenida"])
 
-    st.session_state.mensajes.append({"role": "assistant", "content": respuesta})
+for i, mensaje in enumerate(st.session_state.mensajes):
+    mostrar(i, mensaje)
+
+pregunta = pregunta_sugerida or st.chat_input("Escribe tu pregunta…", max_chars=500)
+if pregunta:
+    historial = [{"rol": m["rol"], "texto": m["texto"][:600]} for m in st.session_state.mensajes[-6:]]
+    st.session_state.mensajes.append({"rol": "usuario", "texto": pregunta})
+    with st.spinner("Revisando las fuentes oficiales…"):
+        respuesta = asistente.responder(conexion, pregunta, historial, perfil=perfil)
+    st.session_state.mensajes.append(
+        {"rol": "asistente", "texto": respuesta.respuesta, "tipo": respuesta.tipo, "fuentes": respuesta.fuentes, "pregunta": pregunta}
+    )
+    st.rerun()
+
+conexion.close()

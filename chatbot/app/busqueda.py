@@ -118,6 +118,9 @@ _K1 = 1.2
 _B = 0.55
 _RRF = 60
 _PESO_VECTORES = 2
+# Lo dirigido al perfil de quien pregunta sube; lo dirigido al otro perfil baja, sin desaparecer.
+_PESO_MISMO_PUBLICO = 1.2
+_PESO_OTRO_PUBLICO = 0.7
 
 
 @dataclass
@@ -135,6 +138,9 @@ class Documento:
     fin: str | None = None
     destacada: bool = False
     borrador: bool = False
+    publico: str = "todos"
+    origen: str = "manual"
+    actualizado: str = ""
 
 
 @dataclass
@@ -169,8 +175,27 @@ def _grupos(consulta: str) -> list[tuple[str, ...]]:
 
 
 def numero_de_articulo(consulta: str) -> int | None:
-    coincide = re.search(r"\bart[ií]?c?u?l?o?\.?\s*(\d{1,3})\b", consulta.lower())
+    coincide = re.search(r"\bart(?:[ií]culos?|s?\.)?\s*(\d{1,3})\b", consulta.lower())
     return int(coincide.group(1)) if coincide else None
+
+
+_TEMA = {
+    _raiz_de(p)
+    for p in """universidad univalle estudiante estudiantes aspirante aspirantes matricula matriculas asignatura asignaturas
+    semestre semestres periodo programa programas carrera carreras inscripcion inscripciones admision admisiones
+    beca becas grado grados titulo diploma certificado certificados nota notas calificacion calificaciones profesor
+    profesores docente facultad facultades sede sedes reglamento acuerdo resolucion articulo creditos credito pregrado
+    posgrado maestria doctorado reingreso traslado transferencia cancelacion habilitacion validacion homologacion
+    equivalencia bienestar carne recibo pago derechos cupo cupos examen icfes saber bachiller clases curso cursos
+    vacaciones rendimiento promedio sancion disciplinario representante consejo registro academico academica
+    calendario horario horarios campus biblioteca monitoria practica pasantia tesis trabajo estimulo""".split()
+}
+
+
+def _peso_publico(publico: str, perfil: str | None) -> float:
+    if not perfil or publico == "todos":
+        return 1.0
+    return _PESO_MISMO_PUBLICO if publico == perfil else _PESO_OTRO_PUBLICO
 
 
 class Indice:
@@ -231,18 +256,32 @@ class Indice:
 
     def parecido_pregunta(self, consulta: str, pregunta_guardada: str) -> float:
         """Parecido entre dos preguntas (0 a 1), dando más valor a las palabras poco comunes."""
+        precision, exhaustividad = self.parecido_detalle(consulta, pregunta_guardada)
+        return 0.7 * precision + 0.3 * exhaustividad
+
+    def parecido_detalle(self, consulta: str, pregunta_guardada: str) -> tuple[float, float]:
+        """(qué parte de la consulta está en la pregunta guardada, qué parte de la pregunta guardada cubre la consulta)."""
         grupos = _grupos(consulta)
         objetivo = set(raices(pregunta_guardada))
         if not grupos or not objetivo:
-            return 0.0
+            return 0.0, 0.0
         pesos = [max(self._idf_de(r) for r in grupo) for grupo in grupos]
         precision = sum(p for p, g in zip(pesos, grupos) if any(r in objetivo for r in g)) / sum(pesos)
         cubiertas = {r for g in grupos for r in g}
         exhaustividad = sum(self._idf_de(r) for r in objetivo & cubiertas) / sum(self._idf_de(r) for r in objetivo)
-        return 0.7 * precision + 0.3 * exhaustividad
+        return precision, exhaustividad
 
-    def buscar(self, consulta: str, limite: int = 6, contexto: str = "", vector: array | None = None) -> list[Resultado]:
-        """`contexto` es la pregunta anterior: ayuda con seguimientos como «¿y si es la tercera vez?»."""
+    def habla_de_la_universidad(self, consulta: str) -> bool:
+        """Si la pregunta usa vocabulario universitario: separa «¿hay beca deportiva?» de «¿capital de Francia?»."""
+        return any(r in _TEMA for grupo in _grupos(consulta) for r in grupo)
+
+    def buscar(
+        self, consulta: str, limite: int = 6, contexto: str = "", vector: array | None = None, perfil: str | None = None
+    ) -> list[Resultado]:
+        """
+        `contexto` es la pregunta anterior: ayuda con seguimientos como «¿y si es la tercera vez?».
+        `perfil` («aspirante» o «estudiante») prioriza el contenido escrito para esa persona.
+        """
         grupos = _grupos(consulta)
         grupos_contexto = [g for g in _grupos(contexto) if g[0] not in {x[0] for x in grupos}] if contexto else []
         numero = numero_de_articulo(consulta)
@@ -253,7 +292,7 @@ class Indice:
         for i in range(len(self.documentos)):
             valor = self._bm25(grupos, i) + 0.5 * self._bm25(grupos_contexto, i)
             if valor > 0:
-                puntajes[i] = valor
+                puntajes[i] = valor * _peso_publico(self.documentos[i].publico, perfil)
         if numero is not None:
             for i, doc in enumerate(self.documentos):
                 if doc.tipo == "articulo" and doc.numero == numero:

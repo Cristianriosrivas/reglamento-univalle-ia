@@ -101,8 +101,8 @@ def extraer_pdf(contenido: bytes, ignorar: tuple[str, ...] = ()) -> Extraccion:
     crudas = [(pagina.extract_text() or "") for pagina in lector.pages]
     sin_texto = sum(len(t.strip()) < _MIN_CHARS_PAGINA for t in crudas)
     # Se repara el documento completo: una página corta no da síntomas suficientes por sí sola.
-    limpio, reparadas = reparar_acentos("".join(crudas))
-    paginas = [[linea.strip() for linea in pagina.splitlines()] for pagina in limpio.split("")]
+    limpio, reparadas = reparar_acentos("\f".join(crudas))
+    paginas = [[linea.strip() for linea in pagina.splitlines()] for pagina in limpio.split("\f")]
 
     repetidas = _lineas_repetidas(paginas)
     lineas: list[str] = []

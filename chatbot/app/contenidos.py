@@ -13,10 +13,10 @@ import re
 import sqlite3
 
 from .busqueda import Documento
-from .config import DEPENDENCIAS, TIPOS
+from .config import DEPENDENCIAS, PUBLICOS, TIPOS
 from .db import ahora
 
-CAMPOS = ("titulo", "texto", "capitulo", "numero", "url", "inicio", "fin", "destacada", "reemplaza")
+CAMPOS = ("titulo", "texto", "capitulo", "numero", "url", "inicio", "fin", "destacada", "reemplaza", "publico")
 # El artículo más largo cargado (cupos especiales de la Resolución 080) tiene 20.000 caracteres.
 MAX_TEXTO = 40_000
 _LIMITES = {"titulo": (3, 300), "texto": (3, MAX_TEXTO)}
@@ -72,6 +72,9 @@ def validar(datos: dict, tipo: str) -> dict:
     if limpio["inicio"] and limpio["fin"] and limpio["inicio"] > limpio["fin"]:
         raise ErrorContenido("La fecha de inicio no puede ser posterior a la de finalización.")
     limpio["destacada"] = 1 if limpio.get("destacada") else 0
+    limpio["publico"] = limpio.get("publico") or "todos"
+    if limpio["publico"] not in PUBLICOS:
+        raise ErrorContenido("Elige para quién es el contenido: todos, aspirantes o estudiantes.")
     limpio["capitulo"] = str(limpio.get("capitulo") or "").strip()
     for campo in ("numero", "reemplaza"):
         valor = limpio.get(campo)
@@ -118,12 +121,12 @@ def crear(conexion: sqlite3.Connection, datos: dict, usuario: dict) -> int:
     _exigir_referencias(conexion, {**limpio, "fuente_id": datos.get("fuente_id")})
     cursor = conexion.execute(
         """INSERT INTO contenidos (tipo, dependencia, fuente_id, titulo, texto, capitulo, numero, url, inicio, fin,
-                                   destacada, reemplaza, estado, actualizado_por, actualizado_en)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'borrador', ?, ?)""",
+                                   destacada, reemplaza, publico, estado, actualizado_por, actualizado_en)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'borrador', ?, ?)""",
         (
             tipo, dependencia, datos.get("fuente_id"), limpio["titulo"], limpio["texto"], limpio["capitulo"],
             limpio.get("numero"), limpio["url"], limpio["inicio"], limpio["fin"], limpio["destacada"],
-            limpio.get("reemplaza"), usuario["nombre"], ahora(),
+            limpio.get("reemplaza"), limpio["publico"], usuario["nombre"], ahora(),
         ),
     )
     _registrar(conexion, cursor.lastrowid, "creado", limpio, usuario["nombre"])
@@ -148,11 +151,11 @@ def editar(conexion: sqlite3.Connection, contenido_id: int, datos: dict, usuario
     else:
         conexion.execute(
             """UPDATE contenidos SET titulo = ?, texto = ?, capitulo = ?, numero = ?, url = ?, inicio = ?, fin = ?,
-               destacada = ?, reemplaza = ?, estado = 'borrador', nota_revision = '',
+               destacada = ?, reemplaza = ?, publico = ?, estado = 'borrador', nota_revision = '',
                actualizado_por = ?, actualizado_en = ? WHERE id = ?""",
             (
                 limpio["titulo"], limpio["texto"], limpio["capitulo"], limpio.get("numero"), limpio["url"],
-                limpio["inicio"], limpio["fin"], limpio["destacada"], limpio.get("reemplaza"), *marca,
+                limpio["inicio"], limpio["fin"], limpio["destacada"], limpio.get("reemplaza"), limpio["publico"], *marca,
             ),
         )
     _registrar(conexion, contenido_id, "editado", limpio, usuario["nombre"])
@@ -180,11 +183,12 @@ def publicar(conexion: sqlite3.Connection, contenido_id: int, usuario: dict) -> 
     datos = json.loads(fila["pendiente"]) if fila["pendiente"] else _vigente(fila)
     conexion.execute(
         """UPDATE contenidos SET titulo = ?, texto = ?, capitulo = ?, numero = ?, url = ?, inicio = ?, fin = ?,
-           destacada = ?, reemplaza = ?, estado = 'publicado', pendiente = NULL, pendiente_estado = NULL,
+           destacada = ?, reemplaza = ?, publico = ?, estado = 'publicado', pendiente = NULL, pendiente_estado = NULL,
            nota_revision = '', actualizado_por = ?, actualizado_en = ? WHERE id = ?""",
         (
             datos["titulo"], datos["texto"], datos["capitulo"], datos.get("numero"), datos["url"], datos["inicio"],
-            datos["fin"], datos["destacada"], datos.get("reemplaza"), usuario["nombre"], ahora(), contenido_id,
+            datos["fin"], datos["destacada"], datos.get("reemplaza"), datos.get("publico") or "todos",
+            usuario["nombre"], ahora(), contenido_id,
         ),
     )
     if datos.get("reemplaza"):
@@ -192,6 +196,7 @@ def publicar(conexion: sqlite3.Connection, contenido_id: int, usuario: dict) -> 
         conexion.execute("UPDATE contenidos SET reemplazado_por = ? WHERE id = ?", (contenido_id, datos["reemplaza"]))
     _registrar(conexion, contenido_id, "publicado", datos, usuario["nombre"])
     conexion.commit()
+    _avisar_cambio(conexion)
 
 
 def devolver(conexion: sqlite3.Connection, contenido_id: int, nota: str, usuario: dict) -> None:
@@ -232,6 +237,13 @@ def archivar(conexion: sqlite3.Connection, contenido_id: int, usuario: dict) -> 
     conexion.execute("UPDATE contenidos SET reemplazado_por = NULL WHERE reemplazado_por = ?", (contenido_id,))
     _registrar(conexion, contenido_id, "archivado", _vigente(fila), usuario["nombre"])
     conexion.commit()
+    _avisar_cambio(conexion)
+
+
+def _avisar_cambio(conexion: sqlite3.Connection) -> None:
+    from .ajustes import subir_version
+
+    subir_version(conexion)
 
 
 def restaurar(conexion: sqlite3.Connection, contenido_id: int, version_id: int, usuario: dict) -> None:
@@ -249,8 +261,9 @@ def restaurar(conexion: sqlite3.Connection, contenido_id: int, version_id: int, 
 
 
 _SELECT_DOC = """
-    SELECT c.*, f.nombre AS fuente, f.url AS fuente_url FROM contenidos c
+    SELECT c.*, COALESCE(f.nombre, fw.nombre) AS fuente, COALESCE(f.url, fw.url) AS fuente_url FROM contenidos c
     LEFT JOIN fuentes f ON f.id = c.fuente_id
+    LEFT JOIN fuentes_web fw ON c.origen = 'web' AND c.origen_ref LIKE 'web' || fw.id || ':%'
 """
 
 
@@ -261,11 +274,14 @@ def _documento(fila: sqlite3.Row, datos: dict | None = None, borrador: bool = Fa
         dependencia=fila["dependencia"], capitulo=origen["capitulo"], numero=origen["numero"],
         fuente=fila["fuente"] or "", url=origen["url"] or fila["fuente_url"] or "",
         inicio=origen["inicio"], fin=origen["fin"], destacada=bool(origen["destacada"]), borrador=borrador,
+        publico=(origen["publico"] if "publico" in origen.keys() else None) or fila["publico"] or "todos",
+        origen=fila["origen"], actualizado=fila["actualizado_en"][:10],
     )
 
 
 def _vencida(documento: Documento, hoy: str) -> bool:
-    return documento.tipo == "fecha" and bool(documento.fin) and documento.fin < hoy
+    """Las fechas y las novedades dejan de mostrarse solas cuando pasa su día final."""
+    return documento.tipo in ("fecha", "novedad") and bool(documento.fin) and documento.fin < hoy
 
 
 def documentos_publicos(conexion: sqlite3.Connection, hoy: str) -> list[Documento]:
@@ -286,3 +302,13 @@ def documentos_de_prueba(conexion: sqlite3.Connection, hoy: str) -> list[Documen
         else:
             documentos.append(_documento(fila, borrador=fila["estado"] != "publicado"))
     return [d for d in documentos if not _vencida(d, hoy)]
+
+
+def aviso_destacado(conexion: sqlite3.Connection, hoy: str) -> dict | None:
+    """La novedad vigente que una dependencia marcó para mostrarse arriba en el chat, si la hay."""
+    fila = conexion.execute(
+        """SELECT titulo, url FROM contenidos WHERE tipo = 'novedad' AND estado = 'publicado' AND destacada = 1
+           AND (fin IS NULL OR fin >= ?) AND (inicio IS NULL OR inicio <= ?) ORDER BY inicio DESC, id DESC LIMIT 1""",
+        (hoy, hoy),
+    ).fetchone()
+    return dict(fila) if fila else None

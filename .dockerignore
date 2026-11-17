@@ -1,0 +1,13 @@
+# Nunca entran a la imagen: claves, bases de datos locales ni entornos virtuales.
+**/.env
+**/datos/
+**/__pycache__/
+**/*.pyc
+.venv/
+venv/
+.git/
+.claude/
+.devcontainer/
+.pytest_cache/
+chatbot/tests/
+streamlit_app.py

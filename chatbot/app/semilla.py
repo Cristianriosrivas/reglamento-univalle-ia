@@ -5,6 +5,7 @@ import json
 import re
 import sqlite3
 
+from . import fuentes_web
 from . import texto as T
 from .config import RAIZ
 from .db import ahora
@@ -31,6 +32,7 @@ NORMAS = {
         "dependencia": "Admisiones",
         "url": f"{_REGISTRO}/2024/05/RCA_080_Reglamento_inscripcion_y_admision-Pregrado.pdf",
         "nota": "Reglamento de Inscripción y Admisión a Pregrado.",
+        "publico": "aspirante",
     },
     "resolucion_066_2024": {
         "nombre": "Resolución 066 de 2024",
@@ -95,6 +97,8 @@ def _capitulo(nombre: str) -> str:
 
 def _insertar(conexion: sqlite3.Connection, **campos) -> int:
     campos.setdefault("estado", "publicado")
+    campos.setdefault("origen", "semilla")
+    campos.setdefault("publico", "todos")
     campos.setdefault("actualizado_por", "Carga inicial")
     campos.setdefault("actualizado_en", ahora())
     columnas = ", ".join(campos)
@@ -137,6 +141,7 @@ def _cargar_acuerdo_009(conexion: sqlite3.Connection, fuente_id: int) -> dict[in
         ids[segmento.numero] = _insertar(
             conexion, tipo="articulo", dependencia=norma["dependencia"], fuente_id=fuente_id, titulo=segmento.titulo,
             texto=texto, capitulo=_capitulo(segmento.capitulo), numero=segmento.numero, url=norma["url"],
+            publico="estudiante",
         )
     return ids
 
@@ -149,6 +154,7 @@ def _cargar_acuerdo_006(conexion: sqlite3.Connection, fuente_id: int, previos: d
         nuevo = _insertar(
             conexion, tipo="articulo", dependencia=norma["dependencia"], fuente_id=fuente_id, titulo=segmento.titulo,
             texto=segmento.texto, capitulo=_CAPITULO_8_VIGENTE, numero=segmento.numero, url=norma["url"], reemplaza=anterior,
+            publico="estudiante",
         )
         conexion.execute("UPDATE contenidos SET reemplazado_por = ? WHERE id = ?", (nuevo, anterior))
 
@@ -161,7 +167,7 @@ def _cargar_norma(conexion: sqlite3.Connection, clave: str, fuente_id: int, esta
             conexion, tipo="articulo", dependencia=norma["dependencia"], fuente_id=fuente_id,
             titulo=f"{segmento.titulo} de la {nombre}" if nombre.startswith("Resolución") else f"{segmento.titulo} del {nombre}",
             texto=_corregir(segmento.texto), capitulo=segmento.capitulo, url=norma["url"], estado=estado,
-            actualizado_por="Carga inicial",
+            actualizado_por="Carga inicial", publico=norma.get("publico", "estudiante"),
         )
 
 
@@ -174,15 +180,22 @@ def _cargar_ejemplos(conexion: sqlite3.Connection, fuentes: dict[str, int]) -> N
                 conexion, tipo=tipo, dependencia=item["dependencia"], titulo=item["titulo"], texto=item["texto"],
                 fuente_id=fuentes.get(clave), url=item.get("url") or (NORMAS[clave]["url"] if clave else ""),
                 inicio=item.get("inicio"), fin=item.get("fin"), destacada=1 if item.get("destacada") else 0,
+                publico=item.get("publico") or _publico_de(tipo, item["dependencia"]),
             )
+
+
+def _publico_de(tipo: str, dependencia: str) -> str:
+    if dependencia == "Admisiones":
+        return "aspirante"
+    return "estudiante" if tipo in ("faq", "fecha") else "todos"
 
 
 def _cargar_usuarios(conexion: sqlite3.Connection, clave: str) -> None:
     hash_clave = crear_hash(clave)
     for correo, nombre, rol, dependencia in USUARIOS:
         conexion.execute(
-            "INSERT INTO usuarios (correo, nombre, rol, dependencia, clave_hash) VALUES (?, ?, ?, ?, ?)",
-            (correo, nombre, rol, dependencia, hash_clave),
+            "INSERT INTO usuarios (correo, nombre, rol, dependencia, clave_hash, creado_en) VALUES (?, ?, ?, ?, ?, ?)",
+            (correo, nombre, rol, dependencia, hash_clave, ahora()),
         )
 
 
@@ -197,6 +210,8 @@ def cargar_si_vacia(conexion: sqlite3.Connection, clave_demo: str) -> bool:
     # Queda en revisión a propósito: en la demo muestra el flujo de aprobación con una norma real.
     _cargar_norma(conexion, "acuerdo_004_2024", fuentes["acuerdo_004_2024"], estado="revision")
     _cargar_ejemplos(conexion, fuentes)
+    # Páginas oficiales y noticias: se leen en segundo plano al arrancar y luego cada cierto tiempo.
+    fuentes_web.cargar_iniciales(conexion)
     if clave_demo:
         _cargar_usuarios(conexion, clave_demo)
     conexion.commit()

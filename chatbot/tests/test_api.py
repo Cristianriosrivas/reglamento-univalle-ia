@@ -41,7 +41,10 @@ def test_paginas_y_widget(cliente):
 
 def test_config_trae_sugerencias_y_politica(cliente):
     datos = cliente.get("/api/config").json()
-    assert len(datos["sugerencias"]) == 4
+    assert len(datos["sugerencias"]["aspirante"]) == 4
+    assert len(datos["sugerencias"]["estudiante"]) == 4
+    assert datos["nombre"] == "Asistente Univalle"
+    assert datos["aviso"] is None
     assert datos["politica"].startswith("https://registro.univalle.edu.co/")
 
 
@@ -57,7 +60,7 @@ def test_rechaza_preguntas_vacias_y_gigantes(cliente):
 
 
 def test_limite_de_preguntas(ruta_db):
-    config = Config(ruta_db=ruta_db, limite_minuto=2, limite_dia=100, origenes=[])
+    config = Config(ruta_db=ruta_db, proveedores=[], limite_minuto=2, limite_dia=100, origenes=[], fuentes_web=False)
     with TestClient(crear_app(config)) as cliente:
         assert cliente.post("/api/chat", json={"pregunta": "hola"}).status_code == 200
         assert cliente.post("/api/chat", json={"pregunta": "hola"}).status_code == 200

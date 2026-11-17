@@ -4,8 +4,10 @@ import json
 import httpx
 import pytest
 
+from app import ajustes
 from app.asistente import INSTRUCCIONES, Asistente, _sin_duplicados, fecha_legible, registrar_sin_respuesta
-from app.config import Config
+from app.config import Config, Proveedor
+from app.db import leer_metrica
 from app.ia import ClienteIA
 from app.seguridad import anonimizar
 
@@ -123,7 +125,10 @@ def _con_cohere(ruta_db, responder_chat, tope=2000):
             return httpx.Response(200, json={"embeddings": {"float": vectores}})
         return responder_chat(cuerpo)
 
-    config = Config(ruta_db=ruta_db, cohere_api_key="clave-falsa", max_llamadas_ia_dia=tope)
+    config = Config(
+        ruta_db=ruta_db, proveedores=[Proveedor("cohere", "cohere", "clave-falsa", "command-a-03-2025")],
+        busqueda_semantica="cohere", max_llamadas_ia_dia=tope, fuentes_web=False,
+    )
     cliente = ClienteIA(config, httpx.Client(transport=httpx.MockTransport(manejar)))
     return Asistente(config, cliente), llamadas
 
@@ -227,7 +232,7 @@ def test_no_cambia_de_personaje_ni_muestra_sus_reglas(ruta_db, conexion, pregunt
 
 
 def test_el_prompt_prohibe_aplicar_reglas_a_casos_personales():
-    assert "No apliques las reglas a los datos de la persona" in INSTRUCCIONES
+    assert "No apliques las reglas a los datos de la persona" in " ".join(INSTRUCCIONES.split())
 
 
 def test_si_la_ia_falla_el_asistente_sigue_respondiendo(ruta_db, conexion):
@@ -238,11 +243,23 @@ def test_si_la_ia_falla_el_asistente_sigue_respondiendo(ruta_db, conexion):
 
 
 def test_el_tope_diario_detiene_el_gasto(ruta_db, conexion):
-    asistente, llamadas = _con_cohere(ruta_db, lambda cuerpo: _texto("Respuesta [1]"), tope=1)
+    asistente, llamadas = _con_cohere(ruta_db, lambda cuerpo: _texto("Respuesta [1]"))
+    asistente.indice_publico(conexion)
+    # Indexar también gasta cuota: el tope deja exactamente una pregunta más (su vector y su redacción).
+    ajustes.actualizar(conexion, {"max_llamadas_ia_dia": leer_metrica(conexion, "llamadas_ia") + 2})
     assert asistente.responder(conexion, PREGUNTA_NORMA).tipo == "ia"
-    chats_antes = len([l for l in llamadas if l.url.path.endswith("/chat")])
+    antes = len(llamadas)
     assert asistente.responder(conexion, PREGUNTA_NORMA).tipo == "norma"
-    assert len([l for l in llamadas if l.url.path.endswith("/chat")]) == chats_antes
+    assert len(llamadas) == antes  # ni vector ni redacción: el tope cubre ambos
+
+
+def test_apagar_la_ia_desde_ajustes(ruta_db, conexion):
+    asistente, llamadas = _con_cohere(ruta_db, lambda cuerpo: _texto("Respuesta [1]"))
+    asistente.indice_publico(conexion)
+    ajustes.actualizar(conexion, {"ia_activa": False})
+    antes = len(llamadas)
+    assert asistente.responder(conexion, PREGUNTA_NORMA).tipo == "norma"
+    assert len(llamadas) == antes
 
 
 def test_los_vectores_no_se_piden_dos_veces(ruta_db, conexion):
