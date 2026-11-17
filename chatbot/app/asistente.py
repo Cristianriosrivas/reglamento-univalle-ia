@@ -465,7 +465,9 @@ class Asistente:
         lineas = []
         for d in novedades:
             fecha = f" ({fecha_legible(None, d.inicio)})" if d.inicio else ""
-            resumen = d.texto if len(d.texto) <= 220 else d.texto[:220].rsplit(" ", 1)[0] + "…"
+            # Solo el primer párrafo, en una línea: un salto de línea sacaría el resto de la viñeta.
+            primero = next((linea.strip() for linea in d.texto.split("\n") if linea.strip()), d.titulo)
+            resumen = _recortar(" ".join(primero.lstrip("-• ").split()), 220)
             lineas.append(f"- **{d.titulo}**{fecha}: {resumen}")
         return Respuesta(
             "Estas son las novedades más recientes:\n" + "\n".join(lineas),

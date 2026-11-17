@@ -147,13 +147,18 @@ def test_rechaza_ajustes_invalidos(cliente, datos):
 # ----- Novedades -----
 def test_una_novedad_destacada_aparece_en_el_chat_y_en_las_respuestas(cliente):
     entrar(cliente, ADMIN)
-    publicar_novedad(cliente)
+    publicar_novedad(cliente, texto=(
+        "Registro Académico extendió hasta el **5 de diciembre de 2026** el plazo para cancelar asignaturas.\n\n"
+        "- La cancelación se hace en el sistema académico.\n- Consulta antes con tu director de programa."
+    ))
     aviso = cliente.get("/api/config").json()["aviso"]
     assert aviso["titulo"] == "Plazo extendido para cancelar asignaturas"
 
     novedades = preguntar(cliente, "¿Qué novedades hay?", "estudiante")
     assert novedades["tipo"] == "novedades"
     assert "Plazo extendido" in novedades["respuesta"]
+    # Cada novedad ocupa una sola viñeta, aunque su texto tenga varios párrafos.
+    assert all(linea.startswith("- **") for linea in novedades["respuesta"].splitlines()[1:])
 
     # La norma dice «séptima semana», pero este semestre hay un aviso que la cambia: se dicen las dos cosas.
     plazo = preguntar(cliente, "¿Cuál es el plazo para cancelar una asignatura?", "estudiante")
